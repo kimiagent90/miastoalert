@@ -9,14 +9,26 @@ const STORAGE_KEY_ROLE = 'miastoalert_role'
 const API_BASE = import.meta.env.VITE_API_BASE || ''
 const GOOGLE_MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 
+// Stolice województw (w tym województwa z dwiema stolicami).
 const CITY_CENTERS = {
-  Warszawa: { lat: 52.2297, lng: 21.0122 },
-  Kraków: { lat: 50.0647, lng: 19.945 },
-  Wrocław: { lat: 51.1079, lng: 17.0385 },
-  Poznań: { lat: 52.4064, lng: 16.9252 },
+  Białystok: { lat: 53.1325, lng: 23.1688 },
+  Bydgoszcz: { lat: 53.1235, lng: 18.0084 },
   Gdańsk: { lat: 54.352, lng: 18.6466 },
+  'Gorzów Wielkopolski': { lat: 52.7325, lng: 15.2369 },
+  Katowice: { lat: 50.2649, lng: 19.0238 },
+  Kielce: { lat: 50.8661, lng: 20.6286 },
+  Kraków: { lat: 50.0647, lng: 19.945 },
+  Lublin: { lat: 51.2465, lng: 22.5684 },
   Łódź: { lat: 51.7592, lng: 19.455 },
+  Olsztyn: { lat: 53.7784, lng: 20.4801 },
+  Opole: { lat: 50.6751, lng: 17.9213 },
+  Poznań: { lat: 52.4064, lng: 16.9252 },
+  Rzeszów: { lat: 50.0413, lng: 21.999 },
   Szczecin: { lat: 53.4285, lng: 14.5528 },
+  Toruń: { lat: 53.0138, lng: 18.5984 },
+  Warszawa: { lat: 52.2297, lng: 21.0122 },
+  Wrocław: { lat: 51.1079, lng: 17.0385 },
+  'Zielona Góra': { lat: 51.9356, lng: 15.5062 },
 }
 
 const DEFAULT_CITY = 'Warszawa'
@@ -72,6 +84,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('mapa')
   const [filterMinutes, setFilterMinutes] = useState(30)
   const [reports, setReports] = useState([])
+  const [selectedReportId, setSelectedReportId] = useState(null)
   const [selectedType, setSelectedType] = useState('policja')
   const [street, setStreet] = useState('')
   const [busNumber, setBusNumber] = useState('')
@@ -246,9 +259,12 @@ function App() {
     }
   }
 
-  async function handleAdminAction(path, method, successMessage) {
+  async function handleAdminAction(path, method, successMessage, body) {
     try {
-      await apiRequest(path, { method })
+      await apiRequest(path, {
+        method,
+        body: body ? JSON.stringify(body) : undefined,
+      })
       setToast(successMessage)
       await Promise.all([loadAdminOverview(), loadReports()])
     } catch (e) {
@@ -278,6 +294,11 @@ function App() {
     if (type === 'kontrola') return '🎫'
     return '🚓'
   }
+
+  const selectedReport = useMemo(() => {
+    if (!selectedReportId) return null
+    return reports.find((r) => r.id === selectedReportId) || null
+  }, [reports, selectedReportId])
 
   async function handleInstallClick() {
     if (installPromptEvent) {
@@ -365,6 +386,9 @@ function App() {
                         fontSize: '22px',
                       }}
                       animation={window.google?.maps?.Animation?.DROP}
+                      onClick={() => {
+                        setSelectedReportId(m.id)
+                      }}
                     />
                   ))}
                   {selectedPosition && (
@@ -417,7 +441,8 @@ function App() {
                     <div>
                       <div className="glass-title">Dodaj zgłoszenie</div>
                       <div className="glass-subtitle">
-                        Wybierz miejsce na mapie i uzupełnij szczegóły.
+                        Wybierz miejsce na mapie i uzupełnij szczegóły. Aby zobaczyć opis,
+                        stuknij w marker.
                       </div>
                     </div>
                     <span className="badge-soft">
@@ -503,43 +528,82 @@ function App() {
                       </div>
                     </div>
                   </form>
+                </div>
+              </div>
+            )}
 
-                  <div className="reports-list">
-                    {loadingReports && (
-                      <div className="inline-text">Ładowanie zgłoszeń…</div>
-                    )}
-                    {!loadingReports && reports.length === 0 && (
-                      <div className="inline-text">
-                        Brak zgłoszeń w wybranym przedziale czasu.
+            {activeTab === 'mapa' && (
+              <div className="map-overlay-bottom" style={{ bottom: '11.4rem' }}>
+                <div className="glass-card" style={{ padding: '0.85rem 1rem 0.95rem' }}>
+                  <div className="glass-header" style={{ marginBottom: '0.45rem' }}>
+                    <div>
+                      <div className="glass-title">Szczegóły zgłoszenia</div>
+                      <div className="glass-subtitle">
+                        {selectedReport
+                          ? 'Stuknij 👍 aby potwierdzić (raz na użytkownika).'
+                          : 'Stuknij w marker na mapie, aby zobaczyć opis.'}
                       </div>
-                    )}
-                    {reports.map((r) => (
-                      <div key={r.id} className="report-item">
-                        <div className="report-main">
-                          <div className="report-emoji">{emojiForType(r.type)}</div>
-                          <div className="report-text">
-                            <div className="report-line-strong">{r.street}</div>
-                            <div className="report-line-muted">
-                              {r.bus_number ? `Autobus ${r.bus_number} • ` : ''}
-                              {r.direction ? r.direction : 'Brak kierunku'}
-                            </div>
+                    </div>
+                    <span className="badge-soft">
+                      {loadingReports ? 'Ładowanie…' : `Zgłoszenia: ${reports.length}`}
+                    </span>
+                  </div>
+
+                  {selectedReport ? (
+                    <div className="report-item">
+                      <div className="report-main">
+                        <div className="report-emoji">
+                          {emojiForType(selectedReport.type)}
+                        </div>
+                        <div className="report-text">
+                          <div className="report-line-strong">
+                            {selectedReport.street}
+                          </div>
+                          <div className="report-line-muted">
+                            Typ zgłoszenia:{' '}
+                            {selectedReport.type === 'kontrola'
+                              ? 'Kontrola biletów'
+                              : 'Policja'}
+                          </div>
+                          <div className="report-line-muted">
+                            {selectedReport.bus_number
+                              ? `Numer autobusu: ${selectedReport.bus_number}`
+                              : 'Numer autobusu: brak'}
+                          </div>
+                          <div className="report-line-muted">
+                            {selectedReport.direction
+                              ? `Kierunek: ${selectedReport.direction}`
+                              : 'Kierunek: brak'}
                           </div>
                         </div>
-                        <div className="report-meta">
-                          <span className="meta-chip">
-                            ⏱ {formatTime(r.created_at)}
-                          </span>
-                          <button
-                            type="button"
-                            className="confirm-button"
-                            onClick={() => handleConfirmReport(r.id)}
-                          >
-                            <span>👍</span> {r.confirmations_count || 0}
-                          </button>
-                        </div>
                       </div>
-                    ))}
-                  </div>
+                      <div className="report-meta">
+                        <span className="meta-chip">
+                          ⏱ {formatTime(selectedReport.created_at)}
+                        </span>
+                        <button
+                          type="button"
+                          className="confirm-button"
+                          onClick={() => handleConfirmReport(selectedReport.id)}
+                        >
+                          <span>👍</span> {selectedReport.confirmations_count || 0}
+                        </button>
+                        <button
+                          type="button"
+                          className="admin-small-button"
+                          onClick={() => setSelectedReportId(null)}
+                        >
+                          Zamknij
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="inline-text">
+                      {reports.length === 0
+                        ? 'Brak zgłoszeń w wybranym przedziale czasu.'
+                        : 'Wybierz marker na mapie, aby zobaczyć szczegóły.'}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -591,6 +655,9 @@ function App() {
                                         `/api/admin/users/${u.id}/role`,
                                         'POST',
                                         'Zmieniono rolę użytkownika.',
+                                        {
+                                          role: u.role === 'moderator' ? 'user' : 'moderator',
+                                        },
                                       )
                                     }
                                   >
@@ -621,6 +688,7 @@ function App() {
                                     u.banned
                                       ? 'Użytkownik został odblokowany.'
                                       : 'Użytkownik został zablokowany.',
+                                    { banned: !u.banned },
                                   )
                                 }
                               >
