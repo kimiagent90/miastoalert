@@ -127,7 +127,29 @@ function App() {
   async function handleSelectCity() {
     try {
       const selected = citySelection || DEFAULT_CITY
-      const data = await apiRequest('/api/auth/anonymous', {
+
+      if (!auth.token) {
+        const data = await apiRequest('/api/auth/anonymous', {
+          method: 'POST',
+          body: JSON.stringify({ city: selected }),
+        })
+        localStorage.setItem(STORAGE_KEY_TOKEN, data.token)
+        localStorage.setItem(STORAGE_KEY_CITY, data.user.city)
+        localStorage.setItem(STORAGE_KEY_ROLE, data.user.role || 'user')
+        const nextAuth = {
+          token: data.token,
+          city: data.user.city,
+          role: data.user.role || 'user',
+        }
+        setAuth(nextAuth)
+        setIsCityModalOpen(false)
+        setMapCenter(CITY_CENTERS[data.user.city] || CITY_CENTERS[DEFAULT_CITY])
+        setToast('Miasto zapisane. Zgłoszenia będą widoczne tylko z wybranego miasta.')
+        await loadReports(nextAuth.city, filterMinutes)
+        return
+      }
+
+      const data = await apiRequest('/api/profile/city', {
         method: 'POST',
         body: JSON.stringify({ city: selected }),
       })
@@ -140,9 +162,11 @@ function App() {
         role: data.user.role || 'user',
       }
       setAuth(nextAuth)
+      setSelectedReportId(null)
+      setSelectedPosition(null)
       setIsCityModalOpen(false)
       setMapCenter(CITY_CENTERS[data.user.city] || CITY_CENTERS[DEFAULT_CITY])
-      setToast('Miasto zapisane. Zgłoszenia będą widoczne tylko z wybranego miasta.')
+      setToast('Miasto zostało zmienione.')
       await loadReports(nextAuth.city, filterMinutes)
     } catch (e) {
       setToast(e.message)
@@ -325,11 +349,18 @@ function App() {
             <span className="app-badge">Na żywo 24/7</span>
           </div>
           <div className="app-header-right">
-            <div className="pill">
+            <button
+              type="button"
+              className="pill"
+              onClick={() => {
+                setCitySelection(auth.city || DEFAULT_CITY)
+                setIsCityModalOpen(true)
+              }}
+            >
               <span className="pill-dot" />
-              <span className="pill-label">Tryb</span>
-              <span className="pill-value">Miasto</span>
-            </div>
+              <span className="pill-label">Miasto</span>
+              <span className="pill-value">{auth.city || 'Wybierz'}</span>
+            </button>
           </div>
         </header>
 
@@ -784,8 +815,8 @@ function App() {
             <div className="city-modal">
               <div className="city-modal-title">Wybierz miasto</div>
               <div className="city-modal-subtitle">
-                Zgłoszenia na mapie będą filtrowane tylko dla wybranego miasta. Nie
-                możesz zmienić miasta samodzielnie – w razie potrzeby zrobi to moderator.
+                Zgłoszenia na mapie będą filtrowane tylko dla wybranego miasta. Możesz
+                zmienić miasto w każdej chwili.
               </div>
               <div className="city-list">
                 {Object.keys(CITY_CENTERS).map((c) => (

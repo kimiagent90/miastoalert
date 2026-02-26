@@ -249,6 +249,38 @@ app.get('/api/auth/me', authRequired, async (req, res) => {
   }
 })
 
+app.post('/api/profile/city', authRequired, async (req, res) => {
+  try {
+    const { city } = req.body || {}
+    if (!city || typeof city !== 'string') {
+      return res.status(400).json({ message: 'Miasto jest wymagane.' })
+    }
+
+    await pool.query('update users set city = $1 where id = $2', [city, req.user.id])
+
+    const result = await pool.query(
+      'select id, role, city, rating, banned from users where id = $1',
+      [req.user.id],
+    )
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: 'Użytkownik nie istnieje' })
+    }
+
+    const user = result.rows[0]
+    const token = signToken({
+      id: user.id,
+      role: user.role,
+      city: user.city,
+      banned: user.banned,
+    })
+
+    return res.json({ token, user })
+  } catch (e) {
+    console.error(e)
+    return res.status(500).json({ message: 'Błąd serwera' })
+  }
+})
+
 app.post('/api/reports', authRequired, createReportLimiter, async (req, res) => {
   try {
     const { type, street, busNumber, direction, lat, lng } = req.body || {}
