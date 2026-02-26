@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>MiastoAlert • Offline</title>
+    <style>
+      :root {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Text',
+          sans-serif;
+        color-scheme: dark;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1.5rem;
+        background: radial-gradient(circle at top, #0b1120 0, #020617 50%, #000 100%);
+        color: #e5edff;
+      }
+      .card {
+        width: 100%;
+        max-width: 420px;
+        border-radius: 1.4rem;
+        padding: 1.4rem 1.3rem 1.2rem;
+        background: linear-gradient(
+            145deg,
+            rgba(15, 23, 42, 0.98),
+            rgba(15, 23, 42, 0.96),
+            rgba(37, 99, 235, 0.9)
+          ),
+          radial-gradient(circle at 0 0, rgba(56, 189, 248, 0.32), transparent 65%);
+        border: 1px solid rgba(148, 163, 184, 0.8);
+        box-shadow:
+          0 26px 50px rgba(15, 23, 42, 1),
+          0 0 0 1px rgba(15, 23, 42, 0.98);
+      }
+      h1 {
+        margin: 0 0 0.4rem;
+        font-size: 1.1rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      p {
+        margin: 0.15rem 0;
+        font-size: 0.9rem;
+        color: #cbd5f5;
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin-top: 0.8rem;
+        padding: 0.35rem 0.7rem;
+        border-radius: 999px;
+        background: rgba(15, 23, 42, 0.96);
+        border: 1px solid rgba(148, 163, 184, 0.8);
+        font-size: 0.78rem;
+      }
+      .pill span:first-child {
+        font-size: 1.1rem;
+      }
+      small {
+        display: block;
+        margin-top: 0.7rem;
+        font-size: 0.78rem;
+        color: #9ca3af;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>MiastoAlert jest offline</h1>
+      <p>Brak połączenia z internetem. Mapa i zgłoszenia wymagają dostępu online.</p>
+      <p>Spróbuj ponownie, gdy połączenie zostanie przywrócone.</p>
+      <div class="pill">
+        <span>📡</span>
+        <span>Oczekiwanie na sieć</span>
+      </div>
+      <small>
+        PWA MiastoAlert może być używana jako aplikacja dodana do ekranu głównego. Gdy
+        połączenie wróci, odśwież kartę.
+      </small>
+    </div>
+  </body>
+</html>
+
